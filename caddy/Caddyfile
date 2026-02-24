@@ -1,0 +1,16 @@
+fopenclaw.com {
+
+    basic_auth {
+        admin $2a$14$b.F/jeVp3t5nEdZk2SS5/eUynl3.H5.qR0/xACT3Nh0bhDarQsGZC
+    }
+
+    log {
+        output file /var/log/caddy/access.log
+    }
+
+    reverse_proxy 172.30.0.20:18789
+}
+
+www.fopenclaw.com {
+    redir https://fopenclaw.com{uri} permanent
+}

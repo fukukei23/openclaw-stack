@@ -1,0 +1,21 @@
+# secrets
+**/*token*
+**/*secret*
+**/.env
+
+# runtime/state (must never be committed)
+openclaw_config/
+openclaw_workspace/
+caddy/data/
+caddy/config/
+caddy/logs/
+
+# temp/generated
+docs/_bundle.md
+docs/_bundle.err
+docs/docs_output.md
+docs/prompt*.txt
+
+# local backups
+docker-compose.yml.bak.*
+docker-compose.yml.save*
