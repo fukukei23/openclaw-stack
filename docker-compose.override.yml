@@ -1,0 +1,4 @@
+services:
+  openclaw-gateway:
+    env_file:
+      - .env
