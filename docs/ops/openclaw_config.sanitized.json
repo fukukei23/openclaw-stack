@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.2.18",
+    "lastTouchedAt": "2026-02-26T14:55:39.492Z"
+  },
+  "agents_defaults": {
+    "model": {
+      "primary": "openai/gpt-5.1-codex",
+      "fallbacks": [
+        "zai/glm-5"
+      ]
+    },
+    "models": {
+      "openai/gpt-5.1-codex": {
+        "alias": "GPT"
+      },
+      "zai/glm-5": {
+        "alias": "GLM5"
+      }
+    }
+  },
+  "agents_list": [
+    {
+      "id": "main",
+      "name": "main",
+      "model": "openai/gpt-5.1-codex"
+    }
+  ],
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "trustedProxies": [
+      "172.30.0.10"
+    ],
+    "controlUi_allowedOrigins": [
+      "https://fopenclaw.com"
+    ],
+    "auth": {
+      "mode": "token",
+      "token": "<REDACTED_GATEWAY_TOKEN len=48>"
+    }
+  },
+  "plugins": {
+    "entries": {
+      "device-pair": {
+        "config": {
+          "publicUrl": "https://fopenclaw.com"
+        }
+      }
+    }
+  },
+  "models": {
+    "providers": {
+      "zai": {
+        "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+        "auth": "api-key",
+        "apiKey": "<REDACTED_API_KEY len=14>",
+        "models": [
+          {
+            "id": "glm-5",
+            "name": "GLM-5",
+            "api": "openai-completions",
+            "input": [
+              "text"
+            ],
+            "compat": {
+              "thinkingFormat": "zai"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
