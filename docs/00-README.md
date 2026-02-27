@@ -18,3 +18,11 @@ curl -u deployer:<REDACTED> https://fopenclaw.com/status
 # => {"health":"ok","model":"openai/gpt-5.1-codex"}
 ```
 > **Security Note:** Never leak `<REDACTED>` secrets into git; store them under `/opt/openclaw/secrets/` with `chmod 600`.
+
+7.  (sanitized operations docs archive)
+
+7.  (sanitized operations docs archive)
+
+7. \ (sanitized operations docs archive)
+
+7. docs/ops/README.md (sanitized operations docs archive)
