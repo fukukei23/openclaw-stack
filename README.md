@@ -6,49 +6,102 @@
   <img src="https://img.shields.io/badge/AI-Agent-FF6B6B?style=for-the-badge" alt="AI Agent">
 </p>
 
-> OpenClaw（AIエージェントプラットフォーム）を安全かつシンプルにVPSでホスティングするためのインフラ構成管理リポジトリ
+> OpenClaw（AIエージェントプラットフォーム）をVPS・ローカルPCで構築・運用するためのインフラ構成管理リポジトリ
+
+---
+
+## 2つの構成環境
+
+本リポジトリは、OpenClawを **2つの異なる環境** で構築するための構成を管理している。
+
+| 項目 | VPS（フクロウ） | ローカルPC（よつば） |
+|------|---------------|-------------------|
+| **用途** | 本番・常時稼働 | ローカル開発・実験 |
+| **マシン** | VPS（Ubuntu） | Surface Go 第1世代 |
+| **IP** | `${VPS_IP}` | `${LOCAL_IP}` / `${TAILSCALE_IP}` |
+| **外部公開** | あり（HTTPS） | なし（ローカルのみ） |
+| **コンテナ数** | 2（Caddy + Gateway） | 1（Gatewayのみ） |
+| **リバースプロキシ** | Caddy（TLS終端） | なし |
+| **ディレクトリ** | `./`（ルート） | `./surface-go/` |
+| **Bot名** | フクロウ | よつば |
+
+### アーキテクチャ比較
+
+```
+■ VPS（フクロウ）
+  インターネット
+       |
+       v
+  UFW ファイアウォール（80/443のみ）
+       |
+       v
+  Caddy（リバースプロキシ）:80,:443
+       | - HTTPS化（Let's Encrypt）
+       | - BasicAuth認証
+       v
+  OpenClaw Gateway :18789（内部のみ）
+       |
+       v
+  OpenAI API
+
+■ ローカルPC（よつば）
+  ローカルネットワーク / Tailscale VPN
+       |
+       v
+  SSH（認証鍵必須）
+       |
+       v
+  OpenClaw Gateway :18789（ループバックのみ）
+       |
+       v
+  z.ai GLM-5 API / MiniMax API
+```
 
 ---
 
 ## リポジトリ構成
 
-OpenClawの運用は2つのリポジトリで構成されています。
+```
+openclaw-stack/
+├── docker-compose.yml           # VPS用: Caddy + Gateway
+├── docker-compose.override.yml  # VPS用: 環境変数
+├── caddy/
+│   └── Caddyfile               # VPS用: リバースプロキシ設定
+├── healthcheck.sh              # VPS用: システム診断
+├── surface-go/                  # ローカルPC用
+│   ├── Dockerfile              # カスタムイメージ（公式ベース + 追加パッケージ）
+│   ├── docker-compose.yml.template
+│   ├── .env.template
+│   └── openclaw.json.template
+└── docs/                        # 共通ドキュメント
+    ├── 00-README.md            # 環境サマリー
+    ├── 01-ARCHITECTURE.md      # アーキテクチャ詳細
+    ├── 02-NETWORK.md           # ネットワーク構成
+    ├── 03-SECURITY.md          # セキュリティ設定
+    ├── 04-DEPLOYMENT.md        # VPSデプロイ手順
+    └── 05-LOCAL-SETUP.md       # ローカルPC構築手順
+```
+
+### 関連リポジトリ
 
 | リポジトリ | 役割 | 公開設定 |
 |-----------|------|----------|
-| **openclaw-stack**（ここ） | VPSインフラ構成・デプロイ・セキュリティ設定 | Public |
-| [openclaw-workspace](https://github.com/fukukei23/openclaw-workspace) | エージェント設定・自動化スクリプト・記憶・運用ワークスペース | Private |
-
-### 関係図
+| **openclaw-stack**（ここ） | VPS + ローカルPCのインフラ構成 | Public |
+| [openclaw-workspace](https://github.com/fukukei23/openclaw-workspace) | エージェント設定・自動化スクリプト・記憶（実行時ワークスペース） | Private |
 
 ```
 openclaw-stack（インフラ層）
-├── docker-compose.yml       # 3サービス定義
-├── caddy/Caddyfile          # リバースプロキシ設定
-├── healthcheck.sh           # システム診断
-└── docs/                    # デプロイ・運用手順
+  VPS: docker-compose / Caddyfile / healthcheck
+  Surface Go: Dockerfile / docker-compose / openclaw.json
         ↓ マウント
 openclaw-workspace（運用層）
-├── config/openclaw.json     # OpenClaw本体設定
-├── AGENTS.md / SOUL.md      # エージェントの性格・ルール
-├── HEARTBEAT.md             # 定期タスク（ニュース収集・要約等）
-├── scripts/                 # 自動化スクリプト（18本）
-├── memory/                  # 長期記憶・ログ
-└── skills/                  # スキル定義
+  config/openclaw.json     # OpenClaw本体設定
+  AGENTS.md / SOUL.md     # エージェントの性格・ルール
+  HEARTBEAT.md            # 定期タスク
+  scripts/                # 自動化スクリプト（18本）
+  fukurou/                # フクロウ(VPS)の引き継ぎ資料
+  yotsuba/                # よつば(Surface Go)の引き継ぎ資料
 ```
-
----
-
-## プロジェクト概要
-
-**OpenClaw Stack** は、AIエージェントプラットフォーム「OpenClaw」を、VPS（Virtual Private Server：仮想専用サーバー）に安全にデプロイするための Docker Compose 構成です。
-
-### 主な特徴
-
-- **セキュリティ重視**: 4層防御（ファイアウォール、HTTPS、認証、デバイストークン）で外部からの不正アクセスを防止
-- **快速セットアップ**: Docker Compose により数分で稼働可能
-- **自動HTTPS**: Let's Encrypt（無料SSL証明書発行サービス）による自動SSL/TLS暗号化
-- **状態監視**: healthcheck.sh でシステム全体を一括診断
 
 ---
 
@@ -57,240 +110,65 @@ openclaw-workspace（運用層）
 ### VPS運用の場合
 
 ```bash
-# 1. リポジトリをクローン
 git clone https://github.com/fukukei23/openclaw-stack.git
 cd openclaw-stack
-
-# 2. 環境設定ファイルを作成
 cp .env.example .env
-# .envファイルを編集して、Gateway Token や APIキーを設定
-
-# 3. Dockerコンテナを起動
+# .env を編集
 docker compose up -d
-
-# 4. 動作確認
-curl -u deployer: https://fopenclaw.com/status
 ```
 
-### ローカル環境構築の場合
+詳細: [docs/04-DEPLOYMENT.md](docs/04-DEPLOYMENT.md)
 
-ローカルPCでOpenClawを構築する手順は [docs/05-LOCAL-SETUP.md](docs/05-LOCAL-SETUP.md) を参照。
-
----
-
-## アーキテクチャ
-
-### システム構成図
-
-```
-                            インターネット
-                                 |
-                                 v
-                    +-----------------------------+
-                    |      fopenclaw.com          |
-                    |        (ドメイン)             |
-                    +--------------+--------------+
-                                   |
-                                   v
-                    +-----------------------------+
-                    |   UFW ファイアウォール         |
-                    |  (ポート80/443のみ許可)        |
-                    +--------------+--------------+
-                                   |
-                                   v
-                    +-----------------------------+
-                    |  Caddy (リバースプロキシ)       |
-                    |  IP: 172.30.0.10             |
-                    |  - HTTPS化                   |
-                    |  - BasicAuth認証              |
-                    |  ポート: 80, 443              |
-                    +--------------+--------------+
-                                   |
-                                   v
-                    +-----------------------------+
-                    |  OpenClaw Gateway             |
-                    |  IP: 172.30.0.20              |
-                    |  内部ポート: 18789              |
-                    |  (外部直接アクセス不可)          |
-                    +--------------+--------------+
-                                   |
-                                   v
-                    +-----------------------------+
-                    |   OpenClaw CLI                |
-                    |   (ローカル操作用)              |
-                    +-----------------------------+
-```
-
-### コンポーネント詳細
-
-| コンポーネント | 役割 | IPアドレス | ポート |
-|----------------|------|------------|--------|
-| **Caddy** | 外部からのアクセスを受け付け、HTTPS化とBasicAuth認証を担当するリバースプロキシ | 172.30.0.10 | 80, 443 |
-| **openclaw-gateway** | OpenClawのメインサービス。AIエージェントの管理・実行 | 172.30.0.20 | 18789 (内部のみ) |
-| **openclaw-cli** | ターミナルからOpenClawを操作するコマンドラインクライアント | - | - |
-
----
-
-## セキュリティ（4層防御）
-
-```
-  【レイヤー1】UFW ファイアウォール
-  - ポート80(HTTP) と 443(HTTPS) のみ公開
-  - ポート18789（Gateway）は完全にブロック
-  - SSH は制限付きで許可
-          |
-          v
-  【レイヤー2】Caddy TLS (HTTPS暗号化)
-  - Let's Encryptによる自動SSL証明書発行
-  - すべての通信を暗号化
-          |
-          v
-  【レイヤー3】HTTP BasicAuth (ID/パスワード認証)
-  - 事前に設定したユーザー名/パスワードでアクセス制御
-  - 未認証者のアクセスを排除
-          |
-          v
-  【レイヤー4】Gateway Token + デバイスペアリング
-  - OpenClaw独自の認証トークン
-  - 許可されたデバイスのみ接続可能
-```
-
----
-
-## ファイル構成
-
-```
-openclaw-stack/
-├── docker-compose.yml           # インフラ定義（3サービスの設定）
-├── docker-compose.override.yml  # 環境変数読み込み設定
-├── healthcheck.sh               # システム診断スクリプト
-├── caddy/
-│   └── Caddyfile               # Caddy設定ファイル
-└── docs/                        # 詳細ドキュメント
-    ├── 00-README.md             # 環境サマリー
-    ├── 01-ARCHITECTURE.md       # アーキテクチャの詳細説明
-    ├── 02-NETWORK.md            # ネットワーク構成詳細
-    ├── 03-SECURITY.md           # セキュリティ設定詳細
-    ├── 04-DEPLOYMENT.md         # デプロイ手順詳細
-    └── 05-LOCAL-SETUP.md        # ローカル環境構築手順
-```
-
----
-
-## 前提条件
-
-| 項目 | 説明 | 推奨 |
-|------|------|------|
-| **VPS** | 仮想専用サーバー | Ubuntu 22.04 LTS |
-| **Docker** | コンテナ仮想化プラットフォーム | 最新安定版 |
-| **Docker Compose** | 複数コンテナの一括管理ツール | v2.x 以上 |
-| **ドメイン** | Webサイトのアドレス（例: fopenclaw.com） | DNS Aレコード設定済み |
-| **OpenAI APIキー** | AIモデルへのアクセス権 | 有効なキー |
-
----
-
-## 設定方法
-
-### 1. 環境変数の設定
-
-`.env` ファイルを作成し、以下の項目を設定します：
+### ローカルPC（Surface Go）構築の場合
 
 ```bash
-# .env ファイルの例
-OPENCLAW_GATEWAY_TOKEN=your_secure_token_here
-OPENCLAW_CONFIG_DIR=/path/to/config
-OPENCLAW_WORKSPACE_DIR=/path/to/workspace
+git clone https://github.com/fukukei23/openclaw-stack.git
+cd openclaw-stack/surface-go
+
+cp .env.template .env && cp docker-compose.yml.template docker-compose.yml
+cp openclaw.json.template ~/.openclaw/openclaw.json
+# .env と openclaw.json を編集
+docker build -t openclaw-surface:local . && docker compose up -d
 ```
 
-### 2. BasicAuth パスワードの生成
-
-```bash
-# Caddy用のハッシュパスワードを生成
-echo "Your password" | docker run -i --rm caddy:2 hash-password
-# 出力されたハッシュ値をCaddyfileに記述
-```
-
-### 3. DNS設定
-
-ドメインのAレコードでVPSのIPアドレスを指定：
-
-```
-A record: fopenclaw.com -> 162.43.17.111
-```
+詳細: [docs/05-LOCAL-SETUP.md](docs/05-LOCAL-SETUP.md)
 
 ---
 
 ## 運用コマンド
 
-### サービスの起動・停止
+### 共通
 
 ```bash
-# 起動
-docker compose up -d
-
-# 停止
-docker compose down
-
-# 再起動
-docker compose restart
-
-# ログ確認
-docker compose logs -f
+docker compose ps                    # 状態確認
+docker compose logs -f --tail 50     # ログ確認
+docker compose restart openclaw-gateway  # 再起動
 ```
 
-### ヘルスチェック（システム診断）
+### VPS: ヘルスチェック
 
 ```bash
-# 全項目チェック
 ./healthcheck.sh
 ```
 
-healthcheck.sh で確認できる項目：
-- システム時刻・ディスク容量
-- Docker コンテナの稼働状況
-- Caddy 設定の妥当性検証
-- 各サービスのログ
+### ローカルPC: アップデート
+
+```bash
+cd ~/nemoclaw-dev
+docker pull ghcr.io/openclaw/openclaw:latest   # ベースイメージ最新化
+docker build -t openclaw-surface:local .         # カスタムイメージ再ビルド
+docker compose up -d                             # コンテナ再作成
+```
 
 ---
 
-## ネットワーク構成
+## セキュリティ（VPS: 4層防御）
 
-| ネットワーク名 | サブネット | 用途 |
-|---------------|-----------|------|
-| `openclaw-net` | 172.30.0.0/24 | 全サービス間通信用 |
-
-| サービス | IPアドレス | 備考 |
-|---------|-----------|------|
-| Caddy | 172.30.0.10 | 外部公開エントリーポイント |
-| openclaw-gateway | 172.30.0.20 | 内部サービスのみ |
-| openclaw-cli | 自動割り当て | クライアント用 |
-
-> Gatewayは **127.0.0.1:18789**（自分自身からのみアクセス可能）でリッスンし、
-> 外部からの直接アクセスを拒否します。
-
----
-
-## トラブルシューティング
-
-### Dockerコンテナが起動しない
-
-```bash
-docker compose logs gateway   # ゲートウェイのログ確認
-docker info                    # Dockerの状態確認
 ```
-
-### HTTPS証明書のエラー
-
-```bash
-docker compose logs caddy     # Caddyのログ確認
-docker exec caddy caddy reload --config /etc/caddy/Caddyfile  # 設定再読み込み
-```
-
-### ネットワーク接続の問題
-
-```bash
-docker network inspect openclaw-net   # ネットワーク確認
-ping fopenclaw.com                     # DNS確認
+【レイヤー1】UFW ファイアウォール（80/443のみ公開）
+【レイヤー2】Caddy TLS（Let's Encrypt自動HTTPS）
+【レイヤー3】HTTP BasicAuth（ID/パスワード認証）
+【レイヤー4】Gateway Token + デバイスペアリング
 ```
 
 ---
@@ -301,19 +179,13 @@ ping fopenclaw.com                     # DNS確認
 |---------|------|
 | [docs/00-README.md](docs/00-README.md) | 環境サマリー |
 | [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) | アーキテクチャ詳細 |
-| [docs/02-NETWORK.md](docs/02-NETWORK.md) | ネットワーク構成詳細 |
-| [docs/03-SECURITY.md](docs/03-SECURITY.md) | セキュリティ設定詳細 |
-| [docs/04-DEPLOYMENT.md](docs/04-DEPLOYMENT.md) | VPSデプロイ手順詳細 |
-| [docs/05-LOCAL-SETUP.md](docs/05-LOCAL-SETUP.md) | ローカル環境構築手順 |
+| [docs/02-NETWORK.md](docs/02-NETWORK.md) | ネットワーク構成 |
+| [docs/03-SECURITY.md](docs/03-SECURITY.md) | セキュリティ設定 |
+| [docs/04-DEPLOYMENT.md](docs/04-DEPLOYMENT.md) | VPSデプロイ手順 |
+| [docs/05-LOCAL-SETUP.md](docs/05-LOCAL-SETUP.md) | ローカルPC構築手順 |
 
 ---
 
 ## ライセンス
 
 MIT License - 詳細は [LICENSE](LICENSE) をご覧ください。
-
----
-
-<p align="center">
-  <sub>Built for OpenClaw Community</sub>
-</p>
