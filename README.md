@@ -10,6 +10,35 @@
 
 ---
 
+## リポジトリ構成
+
+OpenClawの運用は2つのリポジトリで構成されています。
+
+| リポジトリ | 役割 | 公開設定 |
+|-----------|------|----------|
+| **openclaw-stack**（ここ） | VPSインフラ構成・デプロイ・セキュリティ設定 | Public |
+| [openclaw-workspace](https://github.com/fukukei23/openclaw-workspace) | エージェント設定・自動化スクリプト・記憶・運用ワークスペース | Private |
+
+### 関係図
+
+```
+openclaw-stack（インフラ層）
+├── docker-compose.yml       # 3サービス定義
+├── caddy/Caddyfile          # リバースプロキシ設定
+├── healthcheck.sh           # システム診断
+└── docs/                    # デプロイ・運用手順
+        ↓ マウント
+openclaw-workspace（運用層）
+├── config/openclaw.json     # OpenClaw本体設定
+├── AGENTS.md / SOUL.md      # エージェントの性格・ルール
+├── HEARTBEAT.md             # 定期タスク（ニュース収集・要約等）
+├── scripts/                 # 自動化スクリプト（18本）
+├── memory/                  # 長期記憶・ログ
+└── skills/                  # スキル定義
+```
+
+---
+
 ## プロジェクト概要
 
 **OpenClaw Stack** は、AIエージェントプラットフォーム「OpenClaw」を、VPS（Virtual Private Server：仮想専用サーバー）に安全にデプロイするための Docker Compose 構成です。
@@ -25,23 +54,27 @@
 
 ## クイックスタート
 
-### 5分で始める手順
+### VPS運用の場合
 
 ```bash
 # 1. リポジトリをクローン
-$ git clone https://github.com/fukukei23/openclaw-stack.git
-$ cd openclaw-stack
+git clone https://github.com/fukukei23/openclaw-stack.git
+cd openclaw-stack
 
 # 2. 環境設定ファイルを作成
-$ cp .env.example .env
+cp .env.example .env
 # .envファイルを編集して、Gateway Token や APIキーを設定
 
 # 3. Dockerコンテナを起動
-$ docker compose up -d
+docker compose up -d
 
 # 4. 動作確認
-$ curl -u deployer: https://fopenclaw.com/status
+curl -u deployer: https://fopenclaw.com/status
 ```
+
+### ローカル環境構築の場合
+
+ローカルPCでOpenClawを構築する手順は [docs/05-LOCAL-SETUP.md](docs/05-LOCAL-SETUP.md) を参照。
 
 ---
 
@@ -101,10 +134,6 @@ $ curl -u deployer: https://fopenclaw.com/status
 ## セキュリティ（4層防御）
 
 ```
-+------------------------------------------------------------------+
-|                     セキュリティレイヤー                            |
-+------------------------------------------------------------------+
-
   【レイヤー1】UFW ファイアウォール
   - ポート80(HTTP) と 443(HTTPS) のみ公開
   - ポート18789（Gateway）は完全にブロック
@@ -142,7 +171,8 @@ openclaw-stack/
     ├── 01-ARCHITECTURE.md       # アーキテクチャの詳細説明
     ├── 02-NETWORK.md            # ネットワーク構成詳細
     ├── 03-SECURITY.md           # セキュリティ設定詳細
-    └── 04-DEPLOYMENT.md         # デプロイ手順詳細
+    ├── 04-DEPLOYMENT.md         # デプロイ手順詳細
+    └── 05-LOCAL-SETUP.md        # ローカル環境構築手順
 ```
 
 ---
@@ -273,7 +303,8 @@ ping fopenclaw.com                     # DNS確認
 | [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) | アーキテクチャ詳細 |
 | [docs/02-NETWORK.md](docs/02-NETWORK.md) | ネットワーク構成詳細 |
 | [docs/03-SECURITY.md](docs/03-SECURITY.md) | セキュリティ設定詳細 |
-| [docs/04-DEPLOYMENT.md](docs/04-DEPLOYMENT.md) | デプロイ手順詳細 |
+| [docs/04-DEPLOYMENT.md](docs/04-DEPLOYMENT.md) | VPSデプロイ手順詳細 |
+| [docs/05-LOCAL-SETUP.md](docs/05-LOCAL-SETUP.md) | ローカル環境構築手順 |
 
 ---
 
