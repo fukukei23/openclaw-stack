@@ -1,5 +1,7 @@
 # OpenClaw Stack
 
+> Infrastructure-as-code repository for deploying and operating OpenClaw (AI agent platform) on both VPS (production with Caddy reverse proxy + HTTPS) and local PC (Surface Go development environment).
+
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/Caddy-6DB33F?style=for-the-badge&logo=caddy&logoColor=white" alt="Caddy">
