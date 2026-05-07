@@ -3,9 +3,9 @@
 
 | Item | Pass ☐ / Fail ☐ | Verification Steps |
 | --- | --- | --- |
-| DNS points to `162.43.17.111` | ☐ | `dig +short fopenclaw.com` |
+| DNS points to `<YOUR_VPS_IP>` | ☐ | `dig +short fopenclaw.com` |
 | TLS + BasicAuth enforced | ☐ | `curl -I https://fopenclaw.com -u deployer:<REDACTED>` → `200 OK` |
-| Gateway bound to loopback only | ☐ | `sudo ss -ltnp | grep 18789` (shows `127.0.0.1`); `sudo nmap -p 18789 162.43.17.111` (filtered) |
+| Gateway bound to loopback only | ☐ | `sudo ss -ltnp | grep 18789` (shows `127.0.0.1`); `sudo nmap -p 18789 <YOUR_VPS_IP>` (filtered) |
 | UFW rules match policy | ☐ | `sudo ufw status numbered` (allow 80/443, limit 22, deny 18789) |
 | Device pairing reviewed | ☐ | `docker compose exec gateway openclaw devices list` (no unknown devices) |
 | Gateway health OK | ☐ | `curl -u deployer:<REDACTED> https://fopenclaw.com/status` |

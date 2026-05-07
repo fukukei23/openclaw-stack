@@ -13,7 +13,7 @@
 - **Public Route:** Internet → Caddy (80/443) → Gateway loopback.
 - **SSH Tunnel (admin-use):**
   ```bash
-  ssh -L 18789:127.0.0.1:18789 ubuntu@162.43.17.111
+  ssh -L 18789:127.0.0.1:18789 ubuntu@<YOUR_VPS_IP>
   curl -u deployer:<REDACTED> https://localhost:18789/status
   ```
   Use when testing without exposing additional ports; still requires BasicAuth headers.
@@ -24,7 +24,7 @@
 dig +short fopenclaw.com
 
 # Ensure gateway hidden externally
-sudo nmap -p 18789 162.43.17.111     # should be filtered/closed
+sudo nmap -p 18789 <YOUR_VPS_IP>     # should be filtered/closed
 sudo nmap -p 18789 127.0.0.1         # should be open
 
 # UFW state
